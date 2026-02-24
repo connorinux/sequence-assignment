@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SYSTEM/OBSERVE</title>
+  <style>
+    /* ─── Reset & Base ─────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0a0a;
+      --fg:       #e8e8e8;
+      --accent:   #c8ff00;
+      --dim:      #555;
+      --red:      #ff2244;
+      --mono:     'Courier New', Courier, monospace;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--mono);
+      user-select: none;
+    }
+
+    /* ─── Scene Container ───────────────────────────────────────────────── */
+    .scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+    .scene.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    /* ─── Echo Background Layer ─────────────────────────────────────────── */
+    #echo-layer {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .echo-word {
+      position: absolute;
+      color: rgba(200, 255, 0, 0.06);
+      font-family: var(--mono);
+      font-weight: 900;
+      white-space: nowrap;
+      transform-origin: center center;
+      animation: echoFade 6s ease-in-out infinite alternate;
+    }
+    @keyframes echoFade {
+      from { opacity: 0.03; transform: scale(1) rotate(var(--rot)); }
+      to   { opacity: 0.12; transform: scale(1.04) rotate(var(--rot)); }
+    }
+
+    /* ─── SCENE 1 — Input ───────────────────────────────────────────────── */
+    #scene1 { z-index: 1; }
+
+    .s1-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      max-width: 420px;
+      width: 90%;
+    }
+
+    .sys-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      color: var(--dim);
+      text-transform: uppercase;
+    }
+
+    .s1-title {
+      font-size: clamp(1.4rem, 4vw, 2rem);
+      letter-spacing: 0.12em;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .s1-title span {
+      color: var(--accent);
+    }
+
+    .input-row {
+      display: flex;
+      width: 100%;
+      border-bottom: 1px solid var(--dim);
+      padding-bottom: 0.5rem;
+    }
+
+    #name-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--fg);
+      font-family: var(--mono);
+      font-size: 1.2rem;
+      letter-spacing: 0.08em;
+      caret-color: var(--accent);
+    }
+
+    #name-input::placeholder { color: #333; }
+
+    .submit-btn, .continue-btn, .action-btn {
+      background: transparent;
+      border: 1px solid var(--dim);
+      color: var(--fg);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      padding: 0.55rem 1.4rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .submit-btn:hover, .action-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Continue button – flickering */
+    .continue-btn {
+      opacity: 0;
+      pointer-events: none;
+      border-color: var(--accent);
+      color: var(--accent);
+      animation: none;
+    }
+    .continue-btn.visible {
+      opacity: 1;
+      pointer-events: all;
+      animation: flicker 2.4s infinite;
+    }
+    @keyframes flicker {
+      0%,100% { opacity: 1; }
+      5%       { opacity: 0.3; }
+      10%      { opacity: 1; }
+      50%      { opacity: 0.85; }
+      55%      { opacity: 0.2; }
+      60%      { opacity: 0.9; }
+      88%      { opacity: 1; }
+      90%      { opacity: 0.4; }
+      92%      { opacity: 1; }
+    }
+
+    .note {
+      font-size: 0.6rem;
+      color: #333;
+      letter-spacing: 0.15em;
+    }
+
+    /* ─── SCENE 2 — Tracking ────────────────────────────────────────────── */
+    #scene2 { z-index: 1; cursor: none; }
+
+    #trail-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    #eye-container {
+      position: fixed;
+      pointer-events: none;
+      z-index: 3;
+      transform: translate(-50%, -50%);
+      transition: transform 0.06s linear;
+    }
+
+    .eye-outer {
+      width: 54px;
+      height: 28px;
+      border: 1.5px solid rgba(200,255,0,0.7);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 12px rgba(200,255,0,0.3), inset 0 0 8px rgba(200,255,0,0.08);
+      animation: eyePulse 2s ease-in-out infinite;
+    }
+    @keyframes eyePulse {
+      0%,100% { box-shadow: 0 0 12px rgba(200,255,0,0.3); }
+      50%     { box-shadow: 0 0 24px rgba(200,255,0,0.7), inset 0 0 12px rgba(200,255,0,0.15); }
+    }
+
+    .eye-pupil {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #c8ff00, #3a4a00);
+      box-shadow: 0 0 6px rgba(200,255,0,0.8);
+      transition: transform 0.04s linear;
+    }
+
+    .s2-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.6rem;
+      position: relative;
+      z-index: 4;
+    }
+
+    .s2-title {
+      font-size: clamp(1rem, 3vw, 1.5rem);
+      letter-spacing: 0.14em;
+      text-align: center;
+      color: var(--fg);
+    }
+
+    .s2-subtitle {
+      font-size: 0.7rem;
+      color: var(--dim);
+      letter-spacing: 0.2em;
+      text-align: center;
+      animation: textShift 4s ease-in-out infinite alternate;
+    }
+    @keyframes textShift {
+      from { color: #444; }
+      to   { color: #888; }
+    }
+
+    .scan-line {
+      position: fixed;
+      left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(200,255,0,0.25), transparent);
+      pointer-events: none;
+      z-index: 5;
+      animation: scanMove 5s linear infinite;
+    }
+    @keyframes scanMove {
+      from { top: 0; }
+      to   { top: 100%; }
+    }
+
+    #coord-display {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      font-size: 0.55rem;
+      color: rgba(200,255,0,0.35);
+      letter-spacing: 0.15em;
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    #watch-prompt {
+      font-size: 0.7rem;
+      color: var(--dim);
+      letter-spacing: 0.25em;
+      max-width: 320px;
+      text-align: center;
+      line-height: 1.8;
+    }
+
+    #watch-prompt .highlight {
+      color: var(--accent);
+    }
+
+    #proceed-btn {
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    #proceed-btn.visible {
+      opacity: 1;
+    }
+
+    /* ─── SCENE 3 — Loss of Control ─────────────────────────────────────── */
+    #scene3 { z-index: 1; }
+
+    .s3-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      max-width: 460px;
+      width: 90%;
+      position: relative;
+      z-index: 4;
+    }
+
+    .s3-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.3em;
+      color: var(--red);
+      animation: redPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes redPulse {
+      0%,100% { opacity: 1; }
+      50%     { opacity: 0.4; }
+    }
+
+    #type-display {
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      letter-spacing: 0.06em;
+      text-align: center;
+      line-height: 1.7;
+      min-height: 3em;
+      color: var(--fg);
+    }
+
+    #type-display .cursor-blink {
+      display: inline-block;
+      width: 2px;
+      height: 1.1em;
+      background: var(--accent);
+      margin-left: 2px;
+      vertical-align: middle;
+      animation: blink 0.7s step-end infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50%     { opacity: 0; }
+    }
+
+    .btn-arena {
+      position: relative;
+      width: 300px;
+      height: 120px;
+    }
+
+    .escape-btn {
+      position: absolute;
+      background: transparent;
+      border: 1px solid var(--dim);
+      color: var(--fg);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      padding: 0.5rem 1.2rem;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: border-color 0.15s, color 0.15s;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .escape-btn:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    #override-msg {
+      font-size: 0.65rem;
+      color: var(--red);
+      letter-spacing: 0.18em;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    #override-msg.visible { opacity: 1; }
+
+    /* Final message */
+    #final-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.2s ease;
+    }
+    #final-overlay.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .final-line {
+      font-size: clamp(0.65rem, 1.5vw, 0.85rem);
+      letter-spacing: 0.28em;
+      text-align: center;
+      color: #444;
+      max-width: 500px;
+    }
+    .final-line.accent { color: var(--accent); font-size: clamp(0.8rem, 2vw, 1.1rem); }
+    .final-line.red    { color: var(--red);    font-size: clamp(0.7rem, 1.8vw, 0.9rem); }
+    .final-line.dim    { color: #2a2a2a; font-size: 0.6rem; }
+
+    #session-id {
+      font-size: 0.55rem;
+      color: #2a2a2a;
+      letter-spacing: 0.15em;
+    }
+
+    /* ─── Noise Overlay ─────────────────────────────────────────────────── */
+    #noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 99;
+      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      animation: noiseShift 0.15s steps(1) infinite;
+    }
+    @keyframes noiseShift {
+      0%   { background-position: 0 0; }
+      25%  { background-position: -40px -20px; }
+      50%  { background-position: 20px 40px; }
+      75%  { background-position: -20px 10px; }
+      100% { background-position: 10px -30px; }
+    }
+
+    /* ─── Vignette ───────────────────────────────────────────────────────── */
+    #vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 98;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.85) 100%);
+      transition: opacity 1s ease;
+    }
+
+    /* ─── CRT scanlines ──────────────────────────────────────────────────── */
+    #scanlines {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 97;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.08) 2px,
+        rgba(0,0,0,0.08) 4px
+      );
+    }
+
+    /* ─── Status bar ─────────────────────────────────────────────────────── */
+    #status-bar {
+      position: fixed;
+      top: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.55rem;
+      letter-spacing: 0.3em;
+      color: #2a2a2a;
+      z-index: 90;
+      transition: color 1s ease;
+    }
+    #status-bar.watching { color: rgba(200,255,0,0.3); }
+    #status-bar.recording { color: rgba(255,34,68,0.6); animation: redPulse 1s infinite; }
+
+    .dot {
+      display: inline-block;
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Global decoration -->
+<div id="noise"></div>
+<div id="vignette"></div>
+<div id="scanlines"></div>
+<div id="echo-layer"></div>
+<div id="status-bar"><span class="dot"></span>SYSTEM IDLE</div>
+
+<!-- ─── SCENE 1 ─────────────────────────────────────────────────────── -->
+<section class="scene active" id="scene1">
+  <div class="s1-inner">
+    <p class="sys-label">SYSTEM / OBSERVE — v2.4.1</p>
+    <h1 class="s1-title">IDENTIFY <span>YOURSELF</span></h1>
+    <p style="font-size:0.68rem;color:var(--dim);letter-spacing:0.18em;text-align:center;">
+      This session requires identity verification.<br>Enter your name to proceed.
+    </p>
+    <div class="input-row">
+      <input id="name-input" type="text" maxlength="32" placeholder="TYPE YOUR NAME" autocomplete="off" spellcheck="false" />
+    </div>
+    <button class="submit-btn" id="submit-btn">SUBMIT</button>
+    <button class="continue-btn" id="continue-btn">CONTINUE →</button>
+    <p class="note">BY CONTINUING YOU ACKNOWLEDGE PASSIVE MONITORING</p>
+  </div>
+</section>
+
+<!-- ─── SCENE 2 ─────────────────────────────────────────────────────── -->
+<section class="scene" id="scene2">
+  <canvas id="trail-canvas"></canvas>
+  <div id="eye-container">
+    <div class="eye-outer">
+      <div class="eye-pupil" id="pupil"></div>
+    </div>
+  </div>
+  <div class="scan-line"></div>
+  <div id="coord-display">X:000 Y:000</div>
+
+  <div class="s2-inner">
+    <p class="sys-label">MOTION ANALYSIS ACTIVE</p>
+    <h2 class="s2-title">WE ARE<br>WATCHING</h2>
+    <p id="watch-prompt" class="watch-prompt">
+      Move your cursor.<br>
+      <span class="highlight">Every movement is catalogued.</span><br>
+      Your patterns reveal more than you know.
+    </p>
+    <button class="action-btn" id="proceed-btn">PROCEED →</button>
+  </div>
+</section>
+
+<!-- ─── SCENE 3 ─────────────────────────────────────────────────────── -->
+<section class="scene" id="scene3">
+  <div class="s3-inner">
+    <p class="s3-label">⬤ OVERRIDE ACTIVE</p>
+    <p style="font-size:0.65rem;letter-spacing:0.2em;color:var(--dim);">SYSTEM IS COMPLETING YOUR SESSION</p>
+    <div id="type-display"><span class="cursor-blink"></span></div>
+    <div class="btn-arena">
+      <button class="escape-btn" id="escape-btn">TERMINATE SESSION</button>
+    </div>
+    <p id="override-msg">CONTROL SUSPENDED — SYSTEM OVERRIDE IN EFFECT</p>
+  </div>
+</section>
+
+<!-- ─── FINAL OVERLAY ───────────────────────────────────────────────── -->
+<div id="final-overlay">
+  <p class="final-line dim">SESSION COMPLETE</p>
+  <p class="final-line accent" id="final-name"></p>
+  <p class="final-line red">YOUR SESSION HAS BEEN RECORDED</p>
+  <p class="final-line">Movement data, response patterns, and behavioral markers<br>have been logged and stored indefinitely.</p>
+  <p class="final-line dim">You had control once.</p>
+  <p id="session-id"></p>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════════════ */
+let userName = '';
+let currentScene = 1;
+const scenes = { 1: document.getElementById('scene1'), 2: document.getElementById('scene2'), 3: document.getElementById('scene3') };
+
+/* ════════════════════════════════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════════════════════════════ */
+function transitionTo(n) {
+  scenes[currentScene].classList.remove('active');
+  currentScene = n;
+  scenes[n].classList.add('active');
+}
+
+function rand(min, max) { return Math.random() * (max - min) + min; }
+function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
+
+/* ════════════════════════════════════════════════════════════════════
+   SCENE 1 — NAME INPUT + ECHO
+═══════════════════════════════════════════════════════════════════ */
+const nameInput   = document.getElementById('name-input');
+const submitBtn   = document.getElementById('submit-btn');
+const continueBtn = document.getElementById('continue-btn');
+const echoLayer   = document.getElementById('echo-layer');
+const statusBar   = document.getElementById('status-bar');
+
+function buildEchoLayer(name) {
+  echoLayer.innerHTML = '';
+  if (!name.trim()) return;
+  const count = 22;
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('span');
+    el.classList.add('echo-word');
+    const size = rand(2.5, 14);
+    const rot  = rand(-25, 25);
+    el.style.cssText = `
+      font-size: ${size}rem;
+      left: ${rand(-5, 90)}%;
+      top:  ${rand(-5, 90)}%;
+      --rot: ${rot}deg;
+      animation-delay: ${rand(0, 4)}s;
+      animation-duration: ${rand(4, 9)}s;
+    `;
+    el.textContent = name.toUpperCase();
+    echoLayer.appendChild(el);
+  }
+}
+
+submitBtn.addEventListener('click', handleSubmit);
+nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleSubmit(); });
+
+function handleSubmit() {
+  const val = nameInput.value.trim();
+  if (!val) { nameInput.style.borderBottom = '1px solid var(--red)'; return; }
+  userName = val;
+  nameInput.style.borderBottom = '';
+  submitBtn.disabled = true;
+  nameInput.disabled = true;
+
+  buildEchoLayer(userName);
+
+  // Status
+  statusBar.textContent = '';
+  const dot = document.createElement('span'); dot.className = 'dot';
+  statusBar.appendChild(dot);
+  statusBar.appendChild(document.createTextNode(' IDENTITY LOGGED'));
+  statusBar.classList.add('watching');
+
+  // Show continue with slight delay
+  setTimeout(() => {
+    continueBtn.classList.add('visible');
+  }, 1200);
+}
+
+continueBtn.addEventListener('click', () => {
+  transitionTo(2);
+  initScene2();
+});
+
+/* ════════════════════════════════════════════════════════════════════
+   SCENE 2 — CURSOR TRACKING + TRAIL
+═══════════════════════════════════════════════════════════════════ */
+const eyeContainer = document.getElementById('eye-container');
+const coordDisplay = document.getElementById('coord-display');
+const proceedBtn   = document.getElementById('proceed-btn');
+const trailCanvas  = document.getElementById('trail-canvas');
+const ctx          = trailCanvas.getContext('2d');
+
+let trailPoints = [];
+let mouseX = window.innerWidth / 2;
+let mouseY = window.innerHeight / 2;
+let eyeX   = window.innerWidth / 2;
+let eyeY   = window.innerHeight / 2;
+let scene2Active = false;
+let moveCount = 0;
+let proceedShown = false;
+let scene2RAF;
+
+function resizeCanvas() {
+  trailCanvas.width  = window.innerWidth;
+  trailCanvas.height = window.innerHeight;
+}
+
+function initScene2() {
+  resizeCanvas();
+  scene2Active = true;
+
+  statusBar.innerHTML = '';
+  const dot = document.createElement('span'); dot.className = 'dot';
+  statusBar.appendChild(dot);
+  statusBar.appendChild(document.createTextNode(' MOTION CAPTURE ACTIVE'));
+  statusBar.classList.remove('watching');
+  statusBar.classList.add('watching');
+
+  eyeContainer.style.left = mouseX + 'px';
+  eyeContainer.style.top  = mouseY + 'px';
+
+  trailPoints = [];
+  scene2RAF = requestAnimationFrame(drawTrail);
+
+  // Show proceed button after sufficient movement
+  document.addEventListener('mousemove', onScene2Mouse);
+  proceedBtn.addEventListener('click', goToScene3);
+}
+
+function onScene2Mouse(e) {
+  if (!scene2Active) return;
+  mouseX = e.clientX;
+  mouseY = e.clientY;
+  moveCount++;
+
+  trailPoints.push({ x: mouseX, y: mouseY, age: 0 });
+  if (trailPoints.length > 180) trailPoints.shift();
+
+  coordDisplay.textContent = `X:${String(mouseX).padStart(4,'0')}  Y:${String(mouseY).padStart(4,'0')}`;
+
+  if (moveCount > 60 && !proceedShown) {
+    proceedShown = true;
+    proceedBtn.classList.add('visible');
+
+    // Change watch prompt text
+    document.getElementById('watch-prompt').innerHTML =
+      'Your cursor path has been mapped.<br>' +
+      '<span class="highlight">Behavioral signature captured.</span><br>' +
+      'Continue when ready — or don\'t. We\'ll wait.';
+  }
+}
+
+function drawTrail() {
+  if (!scene2Active) return;
+
+  // Smooth eye follow
+  eyeX += (mouseX - eyeX) * 0.12;
+  eyeY += (mouseY - eyeY) * 0.12;
+  eyeContainer.style.left = eyeX + 'px';
+  eyeContainer.style.top  = eyeY + 'px';
+
+  // Age points
+  trailPoints.forEach(p => p.age++);
+  trailPoints = trailPoints.filter(p => p.age < 90);
+
+  // Draw
+  ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+
+  for (let i = 1; i < trailPoints.length; i++) {
+    const p0 = trailPoints[i - 1];
+    const p1 = trailPoints[i];
+    const t  = 1 - p1.age / 90;
+    ctx.beginPath();
+    ctx.moveTo(p0.x, p0.y);
+    ctx.lineTo(p1.x, p1.y);
+    ctx.strokeStyle = `rgba(200,255,0,${t * 0.55})`;
+    ctx.lineWidth   = t * 2.5;
+    ctx.stroke();
+
+    // Dot at each point (sparse)
+    if (i % 8 === 0) {
+      ctx.beginPath();
+      ctx.arc(p1.x, p1.y, t * 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,255,0,${t * 0.4})`;
+      ctx.fill();
+    }
+  }
+
+  // Leading dot (cursor replacement)
+  if (trailPoints.length > 0) {
+    const lp = trailPoints[trailPoints.length - 1];
+    ctx.beginPath();
+    ctx.arc(lp.x, lp.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(200,255,0,0.9)';
+    ctx.fill();
+  }
+
+  scene2RAF = requestAnimationFrame(drawTrail);
+}
+
+function goToScene3() {
+  scene2Active = false;
+  cancelAnimationFrame(scene2RAF);
+  document.removeEventListener('mousemove', onScene2Mouse);
+  ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+  transitionTo(3);
+  initScene3();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   SCENE 3 — LOSS OF CONTROL
+═══════════════════════════════════════════════════════════════════ */
+const typeDisplay  = document.getElementById('type-display');
+const escapeBtn    = document.getElementById('escape-btn');
+const overrideMsg  = document.getElementById('override-msg');
+
+// Phrases the system "types" on behalf of the user
+const phrases = [
+  `Hello. My name is ${() => userName}.`,
+  'I understand I am being observed.',
+  'My data is no longer private.',
+  'The system knows my patterns.',
+  'I consented to this.',
+  'I had control once.',
+];
+
+let phraseIdx     = 0;
+let charIdx       = 0;
+let typeInterval  = null;
+let escapeClickCount = 0;
+let buttonDodging = false;
+let scene3Done    = false;
+
+// Button positions for dodging
+const arenaPositions = [
+  { top:'10%',  left:'10%'  },
+  { top:'10%',  left:'65%'  },
+  { top:'70%',  left:'10%'  },
+  { top:'70%',  left:'65%'  },
+  { top:'40%',  left:'10%'  },
+  { top:'40%',  left:'70%'  },
+  { top:'10%',  left:'38%'  },
+  { top:'70%',  left:'38%'  },
+];
+let posIdx = 0;
+
+function initScene3() {
+  statusBar.innerHTML = '';
+  const dot = document.createElement('span'); dot.className = 'dot';
+  statusBar.appendChild(dot);
+  statusBar.appendChild(document.createTextNode(' OVERRIDE ENGAGED'));
+  statusBar.classList.remove('watching');
+  statusBar.classList.add('recording');
+
+  // Rebuild phrase with current name
+  phrases[0] = `Hello. My name is ${userName}.`;
+
+  // Begin typing after a short delay
+  setTimeout(startTyping, 800);
+
+  // After a few phrases, start button dodging
+  escapeBtn.addEventListener('mouseenter', onEscapeBtnHover);
+  escapeBtn.addEventListener('click', onEscapeClick);
+}
+
+function currentPhrase() { return phrases[phraseIdx] || ''; }
+
+function startTyping() {
+  charIdx = 0;
+  typeInterval = setInterval(typeChar, 55);
+}
+
+function typeChar() {
+  const phrase = currentPhrase();
+  if (charIdx <= phrase.length) {
+    typeDisplay.innerHTML =
+      phrase.slice(0, charIdx) +
+      '<span class="cursor-blink"></span>';
+    charIdx++;
+  } else {
+    clearInterval(typeInterval);
+    // Pause then next phrase
+    setTimeout(() => {
+      phraseIdx++;
+      if (phraseIdx < phrases.length) {
+        // Enable button dodging mid-way through
+        if (phraseIdx >= 2) {
+          buttonDodging = true;
+          overrideMsg.classList.add('visible');
+        }
+        startTyping();
+      } else {
+        // All phrases done — show final
+        setTimeout(showFinal, 1400);
+      }
+    }, 1100);
+  }
+}
+
+function onEscapeBtnHover() {
+  if (!buttonDodging) return;
+  posIdx = (posIdx + 1) % arenaPositions.length;
+  const pos = arenaPositions[posIdx];
+  escapeBtn.style.top    = pos.top;
+  escapeBtn.style.left   = pos.left;
+  escapeBtn.style.transform = 'none';
+
+  // Flash label
+  const labels = ['TERMINATE SESSION', 'ESCAPE', 'STOP THIS', 'PLEASE', 'NO.', 'LET ME OUT'];
+  escapeBtn.textContent = labels[escapeClickCount % labels.length];
+}
+
+function onEscapeClick() {
+  escapeClickCount++;
+  if (escapeClickCount >= 3) {
+    // Give up trying to resist
+    escapeBtn.textContent = 'IT\'S TOO LATE';
+    escapeBtn.disabled    = true;
+    escapeBtn.style.color = 'var(--red)';
+    escapeBtn.style.borderColor = 'var(--red)';
+    setTimeout(showFinal, 1800);
+  }
+}
+
+function showFinal() {
+  if (scene3Done) return;
+  scene3Done = true;
+
+  document.getElementById('final-name').textContent =
+    `SUBJECT: ${userName.toUpperCase()}`;
+
+  // Generate fake session ID
+  const sid = Array.from({length:4}, () =>
+    Math.random().toString(36).substr(2,6).toUpperCase()
+  ).join('-');
+  document.getElementById('session-id').textContent =
+    `SESSION: ${sid}  ·  ${new Date().toISOString()}`;
+
+  document.getElementById('final-overlay').classList.add('visible');
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   RESPONSIVE CANVAS
+═══════════════════════════════════════════════════════════════════ */
+window.addEventListener('resize', () => {
+  if (scene2Active) resizeCanvas();
+});
+</script>
+</body>
+</html>
