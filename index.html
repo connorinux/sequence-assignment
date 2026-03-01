@@ -9,12 +9,12 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:       #0a0a0a;
-      --fg:       #e8e8e8;
-      --accent:   #c8ff00;
-      --dim:      #555;
-      --red:      #ff2244;
-      --mono:     'Courier New', Courier, monospace;
+      --bg:    #0a0a0a;
+      --fg:    #e8e8e8;
+      --accent: #ff1a1a;
+      --dim:   #555;
+      --red:   #ff2244;
+      --mono:  'Courier New', Courier, monospace;
     }
 
     html, body {
@@ -53,7 +53,7 @@
     }
     .echo-word {
       position: absolute;
-      color: rgba(200, 255, 0, 0.06);
+      color: rgba(255, 26, 26, 0.07);
       font-family: var(--mono);
       font-weight: 900;
       white-space: nowrap;
@@ -62,7 +62,7 @@
     }
     @keyframes echoFade {
       from { opacity: 0.03; transform: scale(1) rotate(var(--rot)); }
-      to   { opacity: 0.12; transform: scale(1.04) rotate(var(--rot)); }
+      to   { opacity: 0.14; transform: scale(1.04) rotate(var(--rot)); }
     }
 
     /* ─── SCENE 1 — Input ───────────────────────────────────────────────── */
@@ -90,10 +90,7 @@
       text-align: center;
       line-height: 1.4;
     }
-
-    .s1-title span {
-      color: var(--accent);
-    }
+    .s1-title span { color: var(--accent); }
 
     .input-row {
       display: flex;
@@ -113,7 +110,6 @@
       letter-spacing: 0.08em;
       caret-color: var(--accent);
     }
-
     #name-input::placeholder { color: #333; }
 
     .submit-btn, .continue-btn, .action-btn {
@@ -165,7 +161,7 @@
     }
 
     /* ─── SCENE 2 — Tracking ────────────────────────────────────────────── */
-    #scene2 { z-index: 1; cursor: none; }
+    #scene2 { z-index: 1; cursor: crosshair; }
 
     #trail-canvas {
       position: fixed;
@@ -174,37 +170,84 @@
       z-index: 2;
     }
 
+    /* ─── Eye: centered, large, sclera fixed — iris tracks cursor ─── */
     #eye-container {
       position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
       pointer-events: none;
       z-index: 3;
-      transform: translate(-50%, -50%);
-      transition: transform 0.06s linear;
     }
 
-    .eye-outer {
-      width: 54px;
-      height: 28px;
-      border: 1.5px solid rgba(200,255,0,0.7);
+    .eye-sclera {
+      width: 260px;
+      height: 130px;
       border-radius: 50%;
+      background: #0d0404;
+      border: 2px solid rgba(255, 26, 26, 0.65);
+      box-shadow:
+        0 0 50px rgba(255, 26, 26, 0.25),
+        0 0 100px rgba(255, 26, 26, 0.1),
+        inset 0 0 30px rgba(255, 26, 26, 0.08);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 0 12px rgba(200,255,0,0.3), inset 0 0 8px rgba(200,255,0,0.08);
-      animation: eyePulse 2s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+      animation: eyePulse 3s ease-in-out infinite, eyeBlink 7s ease-in-out infinite;
     }
+
     @keyframes eyePulse {
-      0%,100% { box-shadow: 0 0 12px rgba(200,255,0,0.3); }
-      50%     { box-shadow: 0 0 24px rgba(200,255,0,0.7), inset 0 0 12px rgba(200,255,0,0.15); }
+      0%,100% { box-shadow: 0 0 50px rgba(255,26,26,0.25), 0 0 100px rgba(255,26,26,0.1), inset 0 0 30px rgba(255,26,26,0.08); }
+      50%     { box-shadow: 0 0 70px rgba(255,26,26,0.5),  0 0 140px rgba(255,26,26,0.2), inset 0 0 40px rgba(255,26,26,0.15); }
+    }
+
+    @keyframes eyeBlink {
+      0%, 42%, 48%, 100% { transform: scaleY(1); }
+      45%                 { transform: scaleY(0.04); }
+    }
+
+    .eye-iris {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 38% 32%,
+        #cc2020 0%,
+        #8a0000 35%,
+        #3a0000 65%,
+        #100000 100%);
+      box-shadow: 0 0 22px rgba(255, 26, 26, 0.8), inset 0 0 14px rgba(0,0,0,0.7);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: transform 0.07s ease-out;
+      /* ring detail */
+      border: 1.5px solid rgba(255, 60, 60, 0.3);
     }
 
     .eye-pupil {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #1a0000, #000 70%);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px rgba(0,0,0,1);
+    }
+
+    .eye-highlight {
       width: 14px;
       height: 14px;
       border-radius: 50%;
-      background: radial-gradient(circle at 35% 35%, #c8ff00, #3a4a00);
-      box-shadow: 0 0 6px rgba(200,255,0,0.8);
-      transition: transform 0.04s linear;
+      background: rgba(255, 255, 255, 0.18);
+      position: absolute;
+      top: 20%;
+      left: 24%;
+      pointer-events: none;
     }
 
     .s2-inner {
@@ -214,6 +257,8 @@
       gap: 1.6rem;
       position: relative;
       z-index: 4;
+      /* push content below the eye */
+      margin-top: 260px;
     }
 
     .s2-title {
@@ -223,23 +268,11 @@
       color: var(--fg);
     }
 
-    .s2-subtitle {
-      font-size: 0.7rem;
-      color: var(--dim);
-      letter-spacing: 0.2em;
-      text-align: center;
-      animation: textShift 4s ease-in-out infinite alternate;
-    }
-    @keyframes textShift {
-      from { color: #444; }
-      to   { color: #888; }
-    }
-
     .scan-line {
       position: fixed;
       left: 0; right: 0;
       height: 1px;
-      background: linear-gradient(90deg, transparent, rgba(200,255,0,0.25), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255,26,26,0.3), transparent);
       pointer-events: none;
       z-index: 5;
       animation: scanMove 5s linear infinite;
@@ -254,7 +287,7 @@
       bottom: 1.5rem;
       right: 1.5rem;
       font-size: 0.55rem;
-      color: rgba(200,255,0,0.35);
+      color: rgba(255, 26, 26, 0.4);
       letter-spacing: 0.15em;
       z-index: 6;
       pointer-events: none;
@@ -268,18 +301,13 @@
       text-align: center;
       line-height: 1.8;
     }
-
-    #watch-prompt .highlight {
-      color: var(--accent);
-    }
+    #watch-prompt .highlight { color: var(--accent); }
 
     #proceed-btn {
       opacity: 0;
       transition: opacity 1s ease;
     }
-    #proceed-btn.visible {
-      opacity: 1;
-    }
+    #proceed-btn.visible { opacity: 1; }
 
     /* ─── SCENE 3 — Loss of Control ─────────────────────────────────────── */
     #scene3 { z-index: 1; }
@@ -346,7 +374,7 @@
       padding: 0.5rem 1.2rem;
       cursor: pointer;
       text-transform: uppercase;
-      transition: border-color 0.15s, color 0.15s;
+      transition: border-color 0.15s, color 0.15s, top 0.12s ease, left 0.12s ease;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
     }
@@ -365,7 +393,63 @@
     }
     #override-msg.visible { opacity: 1; }
 
-    /* Final message */
+    /* ─── Scene 3 Glitch Styles ────────────────────────────────────────── */
+    #glitch-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    #glitch-canvas.active { opacity: 1; }
+
+    /* Body shake — applied when glitching */
+    body.glitching {
+      animation: bodyShake 0.09s ease-in-out infinite;
+    }
+    @keyframes bodyShake {
+      0%,100% { transform: translate(0, 0); }
+      20%     { transform: translate(-5px, 2px); }
+      40%     { transform: translate(5px, -2px); }
+      60%     { transform: translate(-3px, 4px); }
+      80%     { transform: translate(4px, -3px); }
+    }
+
+    /* Scene-level color / offset glitch */
+    body.glitching #scene3 {
+      animation: sceneGlitch 0.11s steps(1) infinite;
+    }
+    @keyframes sceneGlitch {
+      0%,100% { filter: none; transform: none; }
+      8%      { filter: hue-rotate(160deg) saturate(5) brightness(1.5); transform: translateX(-10px); }
+      12%     { filter: none; transform: none; }
+      30%     { filter: contrast(5) brightness(1.3); transform: translateX(8px) skewX(-3deg); }
+      34%     { filter: none; transform: none; }
+      52%     { filter: hue-rotate(-120deg) saturate(6) brightness(0.8); transform: translateX(-6px); }
+      56%     { filter: none; transform: none; }
+      75%     { filter: invert(0.2) brightness(1.8) contrast(3); transform: skewX(2deg) translateX(5px); }
+      80%     { filter: none; transform: none; }
+    }
+
+    /* RGB channel split on content text */
+    body.glitching .s3-inner {
+      animation: rgbSplit 0.18s steps(1) infinite;
+    }
+    @keyframes rgbSplit {
+      0%,100% { text-shadow: none; }
+      25%     { text-shadow: -7px 0 rgba(255,40,40,0.9), 7px 0 rgba(40,180,255,0.6); }
+      50%     { text-shadow: 7px 0 rgba(255,40,40,0.9), -7px 0 rgba(40,180,255,0.6); }
+      75%     { text-shadow: -4px 0 rgba(255,200,0,0.7), 4px 0 rgba(0,120,255,0.5); }
+    }
+
+    /* Heavy glitch — extra distortion in final phase */
+    body.heavy-glitch #scene3 {
+      animation: sceneGlitch 0.06s steps(1) infinite;
+    }
+    body.heavy-glitch #glitch-canvas { opacity: 1; }
+
+    /* ─── Final message ──────────────────────────────────────────────────── */
     #final-overlay {
       position: fixed;
       inset: 0;
@@ -412,6 +496,7 @@
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       background-size: 200px 200px;
       animation: noiseShift 0.15s steps(1) infinite;
+      transition: opacity 0.5s;
     }
     @keyframes noiseShift {
       0%   { background-position: 0 0; }
@@ -427,8 +512,7 @@
       inset: 0;
       pointer-events: none;
       z-index: 98;
-      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.85) 100%);
-      transition: opacity 1s ease;
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.88) 100%);
     }
 
     /* ─── CRT scanlines ──────────────────────────────────────────────────── */
@@ -458,8 +542,8 @@
       z-index: 90;
       transition: color 1s ease;
     }
-    #status-bar.watching { color: rgba(200,255,0,0.3); }
-    #status-bar.recording { color: rgba(255,34,68,0.6); animation: redPulse 1s infinite; }
+    #status-bar.watching  { color: rgba(255, 26, 26, 0.4); }
+    #status-bar.recording { color: rgba(255, 34, 68, 0.7); animation: redPulse 1s infinite; }
 
     .dot {
       display: inline-block;
@@ -479,6 +563,9 @@
 <div id="scanlines"></div>
 <div id="echo-layer"></div>
 <div id="status-bar"><span class="dot"></span>SYSTEM IDLE</div>
+
+<!-- Glitch canvas (scene 3) -->
+<canvas id="glitch-canvas"></canvas>
 
 <!-- ─── SCENE 1 ─────────────────────────────────────────────────────── -->
 <section class="scene active" id="scene1">
@@ -500,18 +587,24 @@
 <!-- ─── SCENE 2 ─────────────────────────────────────────────────────── -->
 <section class="scene" id="scene2">
   <canvas id="trail-canvas"></canvas>
+
+  <!-- Eye: fixed center, iris tracks cursor -->
   <div id="eye-container">
-    <div class="eye-outer">
-      <div class="eye-pupil" id="pupil"></div>
+    <div class="eye-sclera">
+      <div class="eye-iris" id="iris">
+        <div class="eye-pupil"></div>
+        <div class="eye-highlight"></div>
+      </div>
     </div>
   </div>
+
   <div class="scan-line"></div>
-  <div id="coord-display">X:000 Y:000</div>
+  <div id="coord-display">X:0000 Y:0000</div>
 
   <div class="s2-inner">
     <p class="sys-label">MOTION ANALYSIS ACTIVE</p>
     <h2 class="s2-title">WE ARE<br>WATCHING</h2>
-    <p id="watch-prompt" class="watch-prompt">
+    <p id="watch-prompt">
       Move your cursor.<br>
       <span class="highlight">Every movement is catalogued.</span><br>
       Your patterns reveal more than you know.
@@ -549,18 +642,19 @@
 ═══════════════════════════════════════════════════════════════════ */
 let userName = '';
 let currentScene = 1;
-const scenes = { 1: document.getElementById('scene1'), 2: document.getElementById('scene2'), 3: document.getElementById('scene3') };
+const scenes = {
+  1: document.getElementById('scene1'),
+  2: document.getElementById('scene2'),
+  3: document.getElementById('scene3')
+};
 
-/* ════════════════════════════════════════════════════════════════════
-   UTILITY
-═══════════════════════════════════════════════════════════════════ */
 function transitionTo(n) {
   scenes[currentScene].classList.remove('active');
   currentScene = n;
   scenes[n].classList.add('active');
 }
 
-function rand(min, max) { return Math.random() * (max - min) + min; }
+function rand(min, max)    { return Math.random() * (max - min) + min; }
 function randInt(min, max) { return Math.floor(rand(min, max + 1)); }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -575,14 +669,12 @@ const statusBar   = document.getElementById('status-bar');
 function buildEchoLayer(name) {
   echoLayer.innerHTML = '';
   if (!name.trim()) return;
-  const count = 22;
-  for (let i = 0; i < count; i++) {
-    const el = document.createElement('span');
+  for (let i = 0; i < 22; i++) {
+    const el  = document.createElement('span');
     el.classList.add('echo-word');
-    const size = rand(2.5, 14);
-    const rot  = rand(-25, 25);
+    const rot = rand(-25, 25);
     el.style.cssText = `
-      font-size: ${size}rem;
+      font-size: ${rand(2.5, 14)}rem;
       left: ${rand(-5, 90)}%;
       top:  ${rand(-5, 90)}%;
       --rot: ${rot}deg;
@@ -607,17 +699,13 @@ function handleSubmit() {
 
   buildEchoLayer(userName);
 
-  // Status
-  statusBar.textContent = '';
+  statusBar.innerHTML = '';
   const dot = document.createElement('span'); dot.className = 'dot';
   statusBar.appendChild(dot);
   statusBar.appendChild(document.createTextNode(' IDENTITY LOGGED'));
   statusBar.classList.add('watching');
 
-  // Show continue with slight delay
-  setTimeout(() => {
-    continueBtn.classList.add('visible');
-  }, 1200);
+  setTimeout(() => { continueBtn.classList.add('visible'); }, 1200);
 }
 
 continueBtn.addEventListener('click', () => {
@@ -626,27 +714,43 @@ continueBtn.addEventListener('click', () => {
 });
 
 /* ════════════════════════════════════════════════════════════════════
-   SCENE 2 — CURSOR TRACKING + TRAIL
+   SCENE 2 — CENTERED EYE + CURSOR TRAIL
 ═══════════════════════════════════════════════════════════════════ */
-const eyeContainer = document.getElementById('eye-container');
+const irisEl       = document.getElementById('iris');
 const coordDisplay = document.getElementById('coord-display');
 const proceedBtn   = document.getElementById('proceed-btn');
 const trailCanvas  = document.getElementById('trail-canvas');
 const ctx          = trailCanvas.getContext('2d');
 
-let trailPoints = [];
-let mouseX = window.innerWidth / 2;
-let mouseY = window.innerHeight / 2;
-let eyeX   = window.innerWidth / 2;
-let eyeY   = window.innerHeight / 2;
+let trailPoints  = [];
+let mouseX       = window.innerWidth / 2;
+let mouseY       = window.innerHeight / 2;
 let scene2Active = false;
-let moveCount = 0;
+let moveCount    = 0;
 let proceedShown = false;
 let scene2RAF;
+
+// Max pixels the iris center can travel from its rest position
+const IRIS_TRAVEL_X = 62;
+const IRIS_TRAVEL_Y = 26;
 
 function resizeCanvas() {
   trailCanvas.width  = window.innerWidth;
   trailCanvas.height = window.innerHeight;
+}
+
+function updateIris() {
+  const cx    = window.innerWidth  / 2;
+  const cy    = window.innerHeight / 2;
+  const dx    = mouseX - cx;
+  const dy    = mouseY - cy;
+  const angle = Math.atan2(dy, dx);
+  // Normalise distance to [0,1], capped at half screen diagonal
+  const maxDist = Math.hypot(window.innerWidth, window.innerHeight) / 2;
+  const t       = Math.min(Math.hypot(dx, dy) / maxDist, 1);
+  const ox      = Math.cos(angle) * t * IRIS_TRAVEL_X;
+  const oy      = Math.sin(angle) * t * IRIS_TRAVEL_Y;
+  irisEl.style.transform = `translate(calc(-50% + ${ox}px), calc(-50% + ${oy}px))`;
 }
 
 function initScene2() {
@@ -660,13 +764,9 @@ function initScene2() {
   statusBar.classList.remove('watching');
   statusBar.classList.add('watching');
 
-  eyeContainer.style.left = mouseX + 'px';
-  eyeContainer.style.top  = mouseY + 'px';
-
   trailPoints = [];
-  scene2RAF = requestAnimationFrame(drawTrail);
+  scene2RAF   = requestAnimationFrame(drawTrail);
 
-  // Show proceed button after sufficient movement
   document.addEventListener('mousemove', onScene2Mouse);
   proceedBtn.addEventListener('click', goToScene3);
 }
@@ -680,13 +780,12 @@ function onScene2Mouse(e) {
   trailPoints.push({ x: mouseX, y: mouseY, age: 0 });
   if (trailPoints.length > 180) trailPoints.shift();
 
-  coordDisplay.textContent = `X:${String(mouseX).padStart(4,'0')}  Y:${String(mouseY).padStart(4,'0')}`;
+  coordDisplay.textContent =
+    `X:${String(mouseX).padStart(4,'0')}  Y:${String(mouseY).padStart(4,'0')}`;
 
   if (moveCount > 60 && !proceedShown) {
     proceedShown = true;
     proceedBtn.classList.add('visible');
-
-    // Change watch prompt text
     document.getElementById('watch-prompt').innerHTML =
       'Your cursor path has been mapped.<br>' +
       '<span class="highlight">Behavioral signature captured.</span><br>' +
@@ -697,45 +796,41 @@ function onScene2Mouse(e) {
 function drawTrail() {
   if (!scene2Active) return;
 
-  // Smooth eye follow
-  eyeX += (mouseX - eyeX) * 0.12;
-  eyeY += (mouseY - eyeY) * 0.12;
-  eyeContainer.style.left = eyeX + 'px';
-  eyeContainer.style.top  = eyeY + 'px';
+  // Update iris direction
+  updateIris();
 
-  // Age points
+  // Age + prune trail
   trailPoints.forEach(p => p.age++);
   trailPoints = trailPoints.filter(p => p.age < 90);
 
-  // Draw
   ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
 
   for (let i = 1; i < trailPoints.length; i++) {
     const p0 = trailPoints[i - 1];
     const p1 = trailPoints[i];
     const t  = 1 - p1.age / 90;
+
     ctx.beginPath();
     ctx.moveTo(p0.x, p0.y);
     ctx.lineTo(p1.x, p1.y);
-    ctx.strokeStyle = `rgba(200,255,0,${t * 0.55})`;
+    ctx.strokeStyle = `rgba(255,26,26,${t * 0.55})`;
     ctx.lineWidth   = t * 2.5;
     ctx.stroke();
 
-    // Dot at each point (sparse)
     if (i % 8 === 0) {
       ctx.beginPath();
       ctx.arc(p1.x, p1.y, t * 1.8, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(200,255,0,${t * 0.4})`;
+      ctx.fillStyle = `rgba(255,26,26,${t * 0.4})`;
       ctx.fill();
     }
   }
 
-  // Leading dot (cursor replacement)
+  // Leading cursor dot
   if (trailPoints.length > 0) {
     const lp = trailPoints[trailPoints.length - 1];
     ctx.beginPath();
     ctx.arc(lp.x, lp.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(200,255,0,0.9)';
+    ctx.fillStyle = 'rgba(255,26,26,0.9)';
     ctx.fill();
   }
 
@@ -752,15 +847,15 @@ function goToScene3() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   SCENE 3 — LOSS OF CONTROL
+   SCENE 3 — LOSS OF CONTROL + GLITCH
 ═══════════════════════════════════════════════════════════════════ */
-const typeDisplay  = document.getElementById('type-display');
-const escapeBtn    = document.getElementById('escape-btn');
-const overrideMsg  = document.getElementById('override-msg');
+const typeDisplay = document.getElementById('type-display');
+const escapeBtn   = document.getElementById('escape-btn');
+const overrideMsg = document.getElementById('override-msg');
+const noiseEl     = document.getElementById('noise');
 
-// Phrases the system "types" on behalf of the user
 const phrases = [
-  `Hello. My name is ${() => userName}.`,
+  '',  // filled at runtime
   'I understand I am being observed.',
   'My data is no longer private.',
   'The system knows my patterns.',
@@ -768,26 +863,110 @@ const phrases = [
   'I had control once.',
 ];
 
-let phraseIdx     = 0;
-let charIdx       = 0;
-let typeInterval  = null;
+let phraseIdx        = 0;
+let charIdx          = 0;
+let typeInterval     = null;
 let escapeClickCount = 0;
-let buttonDodging = false;
-let scene3Done    = false;
+let buttonDodging    = false;
+let scene3Done       = false;
+let glitchLevel      = 0;
+let glitchActive     = false;
+let glitchRAF;
+
+// Glitch canvas
+const glitchCanvas = document.getElementById('glitch-canvas');
+const gCtx         = glitchCanvas.getContext('2d');
 
 // Button positions for dodging
 const arenaPositions = [
-  { top:'10%',  left:'10%'  },
-  { top:'10%',  left:'65%'  },
-  { top:'70%',  left:'10%'  },
-  { top:'70%',  left:'65%'  },
-  { top:'40%',  left:'10%'  },
-  { top:'40%',  left:'70%'  },
-  { top:'10%',  left:'38%'  },
-  { top:'70%',  left:'38%'  },
+  { top:'10%', left:'10%' }, { top:'10%', left:'65%' },
+  { top:'70%', left:'10%' }, { top:'70%', left:'65%' },
+  { top:'40%', left:'10%' }, { top:'40%', left:'70%' },
+  { top:'10%', left:'38%' }, { top:'70%', left:'38%' },
 ];
 let posIdx = 0;
 
+/* ── Glitch Engine ─────────────────────────────────────────────── */
+function startGlitch(level) {
+  glitchLevel  = level;
+  glitchCanvas.width  = window.innerWidth;
+  glitchCanvas.height = window.innerHeight;
+
+  if (!glitchActive) {
+    glitchActive = true;
+    glitchCanvas.classList.add('active');
+    runGlitch();
+  }
+}
+
+function escalateGlitch(level) {
+  glitchLevel = level;
+  if (level >= 2) document.body.classList.add('glitching');
+  if (level >= 3) document.body.classList.add('heavy-glitch');
+  noiseEl.style.opacity = 0.025 + level * 0.055;
+}
+
+function runGlitch() {
+  if (!glitchActive) return;
+
+  gCtx.clearRect(0, 0, glitchCanvas.width, glitchCanvas.height);
+
+  const w = glitchCanvas.width;
+  const h = glitchCanvas.height;
+  const numBands = randInt(2, 6 + glitchLevel * 4);
+
+  for (let i = 0; i < numBands; i++) {
+    const y     = rand(0, h);
+    const bh    = rand(1, 6 + glitchLevel * 8);
+    const xOff  = rand(-30, 30) * glitchLevel;
+
+    // Mostly red/white corruption bands
+    const r  = Math.random();
+    let color;
+    if (r < 0.5)       color = `rgba(255,${randInt(0,40)},${randInt(0,40)},${rand(0.15,0.6)})`;
+    else if (r < 0.75) color = `rgba(255,255,255,${rand(0.04,0.2)})`;
+    else               color = `rgba(0,0,0,${rand(0.3,0.7)})`;
+
+    gCtx.fillStyle = color;
+    gCtx.fillRect(xOff, y, w + Math.abs(xOff), bh);
+  }
+
+  // Occasional full-screen flash
+  if (Math.random() < 0.03 + glitchLevel * 0.04) {
+    gCtx.fillStyle = glitchLevel >= 3
+      ? `rgba(255,10,10,${rand(0.15,0.5)})`
+      : `rgba(255,10,10,${rand(0.05,0.2)})`;
+    gCtx.fillRect(0, 0, w, h);
+  }
+
+  // Occasional white horizontal slice (displaced copy look)
+  if (glitchLevel >= 2 && Math.random() < 0.25) {
+    const sy  = randInt(0, h);
+    const sh  = randInt(4, 30);
+    const dx  = rand(-80, 80);
+    gCtx.fillStyle = `rgba(255,255,255,${rand(0.03,0.12)})`;
+    gCtx.fillRect(dx, sy, w, sh);
+  }
+
+  // Vary repeat interval — faster as glitch level rises
+  const delay = glitchLevel <= 1
+    ? rand(300, 900)
+    : glitchLevel === 2
+      ? rand(80, 300)
+      : rand(20, 120);
+
+  setTimeout(() => { glitchRAF = requestAnimationFrame(runGlitch); }, delay);
+}
+
+function stopGlitch() {
+  glitchActive = false;
+  cancelAnimationFrame(glitchRAF);
+  gCtx.clearRect(0, 0, glitchCanvas.width, glitchCanvas.height);
+  glitchCanvas.classList.remove('active');
+  document.body.classList.remove('glitching', 'heavy-glitch');
+}
+
+/* ── Scene 3 init ─────────────────────────────────────────────── */
 function initScene3() {
   statusBar.innerHTML = '';
   const dot = document.createElement('span'); dot.className = 'dot';
@@ -796,84 +975,81 @@ function initScene3() {
   statusBar.classList.remove('watching');
   statusBar.classList.add('recording');
 
-  // Rebuild phrase with current name
   phrases[0] = `Hello. My name is ${userName}.`;
 
-  // Begin typing after a short delay
+  startGlitch(1);
   setTimeout(startTyping, 800);
 
-  // After a few phrases, start button dodging
   escapeBtn.addEventListener('mouseenter', onEscapeBtnHover);
   escapeBtn.addEventListener('click', onEscapeClick);
 }
 
-function currentPhrase() { return phrases[phraseIdx] || ''; }
-
+/* ── Typing engine ────────────────────────────────────────────── */
 function startTyping() {
-  charIdx = 0;
+  charIdx      = 0;
   typeInterval = setInterval(typeChar, 55);
 }
 
 function typeChar() {
-  const phrase = currentPhrase();
+  const phrase = phrases[phraseIdx] || '';
   if (charIdx <= phrase.length) {
     typeDisplay.innerHTML =
-      phrase.slice(0, charIdx) +
-      '<span class="cursor-blink"></span>';
+      phrase.slice(0, charIdx) + '<span class="cursor-blink"></span>';
     charIdx++;
   } else {
     clearInterval(typeInterval);
-    // Pause then next phrase
     setTimeout(() => {
       phraseIdx++;
       if (phraseIdx < phrases.length) {
-        // Enable button dodging mid-way through
         if (phraseIdx >= 2) {
           buttonDodging = true;
           overrideMsg.classList.add('visible');
         }
+        // Escalate glitch with each phrase
+        escalateGlitch(Math.min(phraseIdx, 3));
         startTyping();
       } else {
-        // All phrases done — show final
-        setTimeout(showFinal, 1400);
+        escalateGlitch(3);
+        setTimeout(showFinal, 1600);
       }
     }, 1100);
   }
 }
 
+/* ── Escape button ────────────────────────────────────────────── */
 function onEscapeBtnHover() {
   if (!buttonDodging) return;
   posIdx = (posIdx + 1) % arenaPositions.length;
   const pos = arenaPositions[posIdx];
-  escapeBtn.style.top    = pos.top;
-  escapeBtn.style.left   = pos.left;
+  escapeBtn.style.top       = pos.top;
+  escapeBtn.style.left      = pos.left;
   escapeBtn.style.transform = 'none';
 
-  // Flash label
-  const labels = ['TERMINATE SESSION', 'ESCAPE', 'STOP THIS', 'PLEASE', 'NO.', 'LET ME OUT'];
+  const labels = ['TERMINATE SESSION','ESCAPE','STOP THIS','PLEASE','NO.','LET ME OUT'];
   escapeBtn.textContent = labels[escapeClickCount % labels.length];
 }
 
 function onEscapeClick() {
   escapeClickCount++;
   if (escapeClickCount >= 3) {
-    // Give up trying to resist
-    escapeBtn.textContent = 'IT\'S TOO LATE';
-    escapeBtn.disabled    = true;
-    escapeBtn.style.color = 'var(--red)';
+    escapeBtn.textContent       = 'IT\'S TOO LATE';
+    escapeBtn.disabled          = true;
+    escapeBtn.style.color       = 'var(--red)';
     escapeBtn.style.borderColor = 'var(--red)';
+    escalateGlitch(3);
     setTimeout(showFinal, 1800);
   }
 }
 
+/* ── Final overlay ────────────────────────────────────────────── */
 function showFinal() {
   if (scene3Done) return;
   scene3Done = true;
+  stopGlitch();
 
   document.getElementById('final-name').textContent =
     `SUBJECT: ${userName.toUpperCase()}`;
 
-  // Generate fake session ID
   const sid = Array.from({length:4}, () =>
     Math.random().toString(36).substr(2,6).toUpperCase()
   ).join('-');
@@ -884,10 +1060,14 @@ function showFinal() {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   RESPONSIVE CANVAS
+   RESIZE
 ═══════════════════════════════════════════════════════════════════ */
 window.addEventListener('resize', () => {
   if (scene2Active) resizeCanvas();
+  if (glitchActive) {
+    glitchCanvas.width  = window.innerWidth;
+    glitchCanvas.height = window.innerHeight;
+  }
 });
 </script>
 </body>
